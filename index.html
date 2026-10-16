@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>포근별 모험단 - CozyStar RPG</title>
+  <meta name="description" content="작고 귀여운 동물들이 살아가는 포근별의 2D 횡스크롤 RPG! 한국풍 달빛 기와마을과 일본풍 벚꽃 신사숲을 모험해보세요." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Noto+Sans+KR:wght@400;600;700;900&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <div id="game-app">
+    <!-- 모니터 전체화면 가득 찬 게임 뷰포트 -->
+    <div id="game-container">
+      <canvas id="game-canvas"></canvas>
+
+      <!-- 상단 보스 체력바 -->
+      <div id="boss-hp-container" class="hidden">
+        <div class="boss-hp-header">
+          <span class="boss-badge">BOSS</span>
+          <span id="boss-hp-text">밤도깨비 쿠루쿠루</span>
+        </div>
+        <div class="boss-hp-bar-bg">
+          <div id="boss-hp-bar" class="boss-hp-bar-fill"></div>
+        </div>
+      </div>
+
+      <!-- 상단 메인 HUD (큼직하고 시원한 UI) -->
+      <header id="top-hud">
+        <!-- 좌측: 플레이어 프로필 & 큼직한 HP/MP 게이지 -->
+        <div class="hud-profile-card">
+          <div class="avatar-box">
+            <div class="avatar-pomi">
+              <span class="avatar-sprout">🌱</span>
+            </div>
+          </div>
+          <div class="hud-status-info">
+            <div class="hud-name-row">
+              <span id="hud-name" class="player-name">포미</span>
+              <span id="hud-level" class="player-level">Lv.1</span>
+              <span class="player-class">새싹 모험가</span>
+            </div>
+            <!-- 큰 HP 바 -->
+            <div class="stat-bar-container hp-container">
+              <div class="stat-bar-label">HP</div>
+              <div class="bar-track">
+                <div id="hud-hp-bar" class="bar-fill hp-fill"></div>
+              </div>
+              <span id="hud-hp-text" class="bar-text">120 / 120</span>
+            </div>
+            <!-- 큰 MP 바 -->
+            <div class="stat-bar-container mp-container">
+              <div class="stat-bar-label">MP</div>
+              <div class="bar-track">
+                <div id="hud-mp-bar" class="bar-fill mp-fill"></div>
+              </div>
+              <span id="hud-mp-text" class="bar-text">80 / 80</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 중앙: 현재 맵 & 테마 뱃지 -->
+        <div class="hud-location-badge">
+          <span class="loc-icon">🏮</span>
+          <span id="hud-map-name">달빛 기와마을 (한국풍)</span>
+        </div>
+
+        <!-- 우측: 재화(골드) & 시스템 메뉴 버튼 -->
+        <div class="hud-right-menu">
+          <div class="gold-box">
+            <span class="gold-icon">🪙</span>
+            <span id="hud-gold-text">100</span> G
+          </div>
+          <div class="sys-buttons">
+            <button id="btn-mute" class="hud-circle-btn" title="사운드 On/Off">🔊</button>
+            <button id="btn-save" class="hud-circle-btn" title="게임 저장">💾</button>
+            <button id="btn-reset" class="hud-circle-btn" title="처음부터 다시하기">🔄</button>
+          </div>
+        </div>
+      </header>
+
+      <!-- 사용자 요청: 방향키와 스킬들이 화면 왼쪽에 정돈되어 모바일/아이패드/PC 모두 편리한 조작계 -->
+      <div id="left-controller-cluster">
+        <!-- 방향키 그룹 (D-Pad) -->
+        <div class="ctrl-group dpad-group">
+          <div class="dpad-row">
+            <button id="btn-v-up" class="v-btn v-btn-dir" data-key="up" title="올라가기/포탈 (W / ↑)">▲</button>
+          </div>
+          <div class="dpad-row dpad-mid">
+            <button id="btn-v-left" class="v-btn v-btn-dir" data-key="left" title="왼쪽 이동 (A / ←)">◀</button>
+            <button id="btn-v-down" class="v-btn v-btn-dir" data-key="down" title="웅크리기/하향점프 (S / ↓)">▼</button>
+            <button id="btn-v-right" class="v-btn v-btn-dir" data-key="right" title="오른쪽 이동 (D / →)">▶</button>
+          </div>
+        </div>
+
+        <!-- 스킬 & 액션 버튼 그룹 (방향키 바로 오른쪽에 밀착 배치) -->
+        <div class="ctrl-group action-group">
+          <!-- 상단 보조 액션 (점프 & 대화/포탈) -->
+          <div class="action-row">
+            <button id="btn-v-jump" class="v-btn v-btn-action btn-jump" data-key="jump" title="점프 (Space)">
+              <span class="v-icon">🦘</span>
+              <span class="v-label">점프</span>
+            </button>
+            <button id="btn-v-interact" class="v-btn v-btn-action btn-interact" data-key="interact" title="대화/포탈 (E)">
+              <span class="v-icon">💬</span>
+              <span class="v-label">대화</span>
+            </button>
+          </div>
+          <!-- 하단 전투 스킬 (공격, 별폭풍, 수호막) -->
+          <div class="action-row">
+            <button id="btn-v-attack" class="v-btn v-btn-action btn-attack" data-key="attack" title="공격 (J)">
+              <span class="v-icon">⚔️</span>
+              <span class="v-label">공격 [J]</span>
+            </button>
+            <button id="btn-v-skill1" class="v-btn v-btn-action btn-skill1" data-key="skill1" title="별가루 폭풍 (K)">
+              <span class="v-icon">⭐</span>
+              <span class="v-label">별폭풍 [K]</span>
+            </button>
+            <button id="btn-v-skill2" class="v-btn v-btn-action btn-skill2" data-key="skill2" title="별빛 수호막 (L)">
+              <span class="v-icon">🛡️</span>
+              <span class="v-label">수호막 [L]</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 퀵슬롯 포션 버튼들 -->
+        <div class="ctrl-group potion-group">
+          <button id="quick-slot-1" class="v-btn v-potion-btn" title="딸기우유 HP 회복 [1키]">
+            <span class="potion-icon">🍓</span>
+            <span class="potion-key">[1]</span>
+            <span id="quick-slot-1-count" class="potion-count">5</span>
+          </button>
+          <button id="quick-slot-2" class="v-btn v-potion-btn" title="별사탕 MP 회복 [2키]">
+            <span class="potion-icon">🍬</span>
+            <span class="potion-key">[2]</span>
+            <span id="quick-slot-2-count" class="potion-count">5</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 우측 하단 메뉴 바 (가방, 퀘스트, 능력치) -->
+      <div id="right-hud-actions">
+        <button id="btn-open-inv" class="hud-pill-btn"><span class="btn-hotkey">[I]</span> 🎒 가방</button>
+        <button id="btn-open-quest" class="hud-pill-btn"><span class="btn-hotkey">[Q]</span> 📜 퀘스트</button>
+        <button id="btn-open-stats" class="hud-pill-btn"><span class="btn-hotkey">[C]</span> 📊 능력치</button>
+      </div>
+
+      <!-- 메이플 감성 최하단 EXP 경험치 바 -->
+      <div id="global-exp-bar-container">
+        <div id="hud-exp-bar" class="exp-bar-fill"></div>
+        <div id="hud-exp-text" class="exp-bar-text">EXP: 0 / 80 (0.0%)</div>
+      </div>
+
+      <!-- 플로팅 토스트 메시지 -->
+      <div id="toast-container"></div>
+
+      <!-- 모달 1: 인벤토리 & 장비창 (I) -->
+      <div id="inventory-modal" class="game-modal hidden">
+        <div class="modal-window">
+          <div class="modal-header">
+            <h3>🎒 배낭 및 착용 장비</h3>
+            <button class="btn-modal-close">✕</button>
+          </div>
+          <div class="modal-body modal-grid-layout">
+            <div class="equip-section">
+              <h4>장착 장비</h4>
+              <div class="equip-slot-item">
+                <span class="slot-tag">무기</span>
+                <span id="equip-slot-weapon" class="slot-val">무기 미착용</span>
+              </div>
+              <div class="equip-slot-item">
+                <span class="slot-tag">방어구</span>
+                <span id="equip-slot-armor" class="slot-val">방어구 미착용</span>
+              </div>
+              <div class="equip-slot-item">
+                <span class="slot-tag">장신구</span>
+                <span id="equip-slot-acc" class="slot-val">장신구 미착용</span>
+              </div>
+              <p class="equip-tip">※ 슬롯 아이템 클릭 시 사용/장착됩니다.</p>
+            </div>
+            <div class="inv-section">
+              <h4>소지품 목록 (클릭하여 사용)</h4>
+              <div id="inventory-grid" class="inv-grid-container"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 모달 2: 퀘스트 저널 (Q) -->
+      <div id="quest-modal" class="game-modal hidden">
+        <div class="modal-window">
+          <div class="modal-header">
+            <h3>📜 포근별 모험 일지 (퀘스트)</h3>
+            <button class="btn-modal-close">✕</button>
+          </div>
+          <div class="modal-body">
+            <div id="quest-list" class="quest-list-container"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 모달 3: 캐릭터 능력치 (C) -->
+      <div id="stats-modal" class="game-modal hidden">
+        <div class="modal-window">
+          <div class="modal-header">
+            <h3>📊 포미의 모험 능력치</h3>
+            <button class="btn-modal-close">✕</button>
+          </div>
+          <div class="modal-body stats-body">
+            <div class="stat-row"><span>레벨</span><strong id="stat-level">Lv.1</strong></div>
+            <div class="stat-row"><span>생명력 (HP)</span><strong id="stat-hp">120 / 120</strong></div>
+            <div class="stat-row"><span>마나 (MP)</span><strong id="stat-mp">80 / 80</strong></div>
+            <div class="stat-row"><span>총 공격력</span><strong id="stat-attack">14</strong></div>
+            <div class="stat-row"><span>총 방어력</span><strong id="stat-defense">5</strong></div>
+            <div class="stat-row"><span>치명타 확률</span><strong id="stat-crit">15%</strong></div>
+            <div class="stat-row"><span>이동 속도</span><strong id="stat-speed">160</strong></div>
+            <div class="stat-row"><span>소지 골드</span><strong id="stat-gold">100 G</strong></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 모달 4: NPC 대화창 (E) -->
+      <div id="dialogue-modal" class="game-modal hidden dialogue-backdrop">
+        <div class="dialogue-window">
+          <div class="dialogue-header">
+            <span class="dialogue-npc-avatar">🐰</span>
+            <h4 id="dialogue-npc-name">토리</h4>
+          </div>
+          <div class="dialogue-content">
+            <p id="dialogue-text">안녕! 난 토리야! 기와마을 밖으로 나가기 전에 준비를 해보자구!</p>
+          </div>
+          <div class="dialogue-footer">
+            <button id="btn-dialogue-next" class="btn-dialogue-action">다음 ▶</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 모달 5: 상점 모달 (토리 / 쿠키) -->
+      <div id="shop-modal" class="game-modal hidden">
+        <div class="modal-window">
+          <div class="modal-header">
+            <h3 id="shop-title">토리의 잡화상점</h3>
+            <button class="btn-modal-close">✕</button>
+          </div>
+          <div class="modal-body">
+            <div id="shop-item-list" class="shop-list-container"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 모달 6: 엔딩 모달 -->
+      <div id="ending-modal" class="game-modal hidden">
+        <div class="modal-window ending-window">
+          <div class="ending-content">
+            <h2>✨ 벚꽃 신사의 어둠이 정화되었습니다! ✨</h2>
+            <div class="ending-stars">⭐⭐⭐⭐⭐</div>
+            <p>포미의 용기로 어둠에 물들었던 밤도깨비가 원래의 귀여운 모습으로 돌아왔습니다!</p>
+            <p>토리, 하루, 모모, 쿠키와 마을 주민들이 함께 모여 감사의 인사를 건넵니다.</p>
+            <div class="ending-badge">🌸 《포근별 모험단》 모험 클리어! 🌸</div>
+            <button id="btn-close-ending" class="hud-pill-btn">계속 모험하기</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
